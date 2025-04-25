@@ -3,6 +3,7 @@ package org.kickmyb.server.task;
 import org.joda.time.DateTime;
 import org.kickmyb.server.account.MUser;
 import org.kickmyb.server.account.MUserRepository;
+import org.kickmyb.server.exceptions.TaskNotFoundException;
 import org.kickmyb.transfer.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -91,6 +92,17 @@ public class ServiceTaskImpl implements ServiceTask {
         repo.save(element);
     }
 
+    @Override
+    public void delete(long taskID, MUser user) throws TaskNotFoundException{
+        MTask task = user
+                .tasks.stream()
+                .filter(t->t.id == taskID)
+                .findFirst().orElseThrow(() -> new TaskNotFoundException("Can't find delete"));
+
+        repo.delete(task);
+        user.tasks.remove(task);
+        repoUser.save(user);
+    }
     @Override
     public List<HomeItemResponse> home(Long userID) {
         MUser user = repoUser.findById(userID).get();

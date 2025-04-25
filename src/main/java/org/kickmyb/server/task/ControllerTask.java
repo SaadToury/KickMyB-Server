@@ -57,6 +57,15 @@ public class ControllerTask {
         return serviceTask.detail(id, user);
     }
 
+    @DeleteMapping("/api/delete/{taskID}")
+    public @ResponseBody String deleteTask(@PathVariable long taskID){
+        System.out.println("KICKB SERVER : Delete task: "+ taskID);
+        ConfigHTTP.attenteArticifielle();
+        MUser user = currentUser();
+        serviceTask.delete(taskID,user);
+        return "Task Deleted";
+    }
+
     /**
      * Accède au Principal stocké dans la mémoire vivre (HttpSession)
      * La session de l'utilisateur est accédée grâce au  JSESSIONID qui était dans lq requête dans un cookie
