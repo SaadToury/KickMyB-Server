@@ -4,6 +4,7 @@ import org.joda.time.DateTime;
 import org.kickmyb.server.account.MUser;
 import org.kickmyb.server.account.MUserRepository;
 import org.kickmyb.server.exceptions.TaskNotFoundException;
+import org.kickmyb.server.exceptions.UnAuthorizedException;
 import org.kickmyb.transfer.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Transactional
@@ -33,8 +35,8 @@ public class ServiceTaskImpl implements ServiceTask {
 
     @Override
     public TaskDetailResponse detail(Long id, MUser user) {
-        //MTask element = user.tasks.stream().filter(elt -> elt.id == id).findFirst().get();
-        MTask element = repo.findById(id).get();
+        MTask element = user.tasks.stream().filter(elt -> elt.id == id).findFirst().get();
+        //MTask element = repo.findById(id).get();
         TaskDetailResponse response = new TaskDetailResponse();
         response.name = element.name;
         response.id = element.id;
@@ -80,16 +82,25 @@ public class ServiceTaskImpl implements ServiceTask {
     }
 
     @Override
-    public void updateProgress(long taskID, int value) {
-        MTask element = repo.findById(taskID).get();
+    public void updateProgress(long taskID, int value, MUser user) {
+        Optional<MTask> taskOptional = user.tasks.stream()
+                .filter(task -> task.id == taskID)
+                .findFirst();
+
+        if (!taskOptional.isPresent()) {
+            throw new UnAuthorizedException("Unauthorized access: Task ID not found or does not belong to this user.");
+        }
+
+        MTask task = taskOptional.get();
+
         // TODO validate value is between 0 and 100
         MProgressEvent pe= new MProgressEvent();
         pe.resultPercentage = value;
         pe.completed = value ==100;
         pe.timestamp = DateTime.now().toDate();
         repoProgressEvent.save(pe);
-        element.events.add(pe);
-        repo.save(element);
+        task.events.add(pe);
+        repo.save(task);
     }
 
     @Override
